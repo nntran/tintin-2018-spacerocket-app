@@ -8,6 +8,7 @@ import android.widget.Button;
 
 import java.io.IOException;
 
+import fr.sqli.tintinspacerocketapp.led.LEDColors;
 import fr.sqli.tintinspacerocketapp.led.LEDManager;
 import fr.sqli.tintinspacerocketapp.server.HttpdServer;
 
@@ -16,13 +17,12 @@ public class MainActivity extends Activity {
 
     private HttpdServer httpdserver;
 
-
-
     private Button exitButton;
     private Button blueLEDButton;
     private Button yellowLEDButton;
     private Button redLEDButton;
     private Button greenLEDButton;
+    private Button launchSequenceButton;
     private LEDManager ledManagerInstance;
 
     @Override
@@ -30,7 +30,7 @@ public class MainActivity extends Activity {
         Log.d(TAG, "onCreate");
         super.onCreate(savedInstanceState);
         setContentView(R.layout.main_layout);
-        initButtons();
+        initView();
 
         // Starting HTTP server
         httpdserver = new HttpdServer();
@@ -41,14 +41,13 @@ public class MainActivity extends Activity {
         }
         try {
             ledManagerInstance = LEDManager.getInstance();
-            ledManagerInstance.turnOnAllLEDs();
+            ledManagerInstance.startWelcomeSequence();
         } catch (IOException ioe) {
             Log.e(TAG, "Erreur lors de l'initialisation des LEDS", ioe);
         }
-
     }
 
-    private void initButtons() {
+    private void initView() {
         exitButton = findViewById(R.id.exitButton);
         exitButton.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -102,6 +101,15 @@ public class MainActivity extends Activity {
         yellowLEDButton.setOnClickListener(buttonsLEDOnclickListenner);
         redLEDButton.setOnClickListener(buttonsLEDOnclickListenner);
         greenLEDButton.setOnClickListener(buttonsLEDOnclickListenner);
+
+        launchSequenceButton = findViewById(R.id.launchSequenceButton);
+        launchSequenceButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                LEDColors[] ledColors = {LEDColors.BLUE, LEDColors.YELLOW, LEDColors.RED, LEDColors.GREEN, LEDColors.GREEN, LEDColors.GREEN};
+                ledManagerInstance.launchSequence(ledColors);
+            }
+        });
 
     }
 
