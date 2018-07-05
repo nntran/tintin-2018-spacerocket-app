@@ -4,17 +4,17 @@ import com.squareup.moshi.Moshi;
 
 import fi.iki.elonen.NanoHTTPD.Response.Status;
 
-public final class Health implements HttpResponse {
+public class OkSynch implements HttpResponse {
 
-    public final String status = "alive";
+    public final String message = "OK";
 
     @Override
     public String toJson(final Moshi moshi) {
-        return moshi.adapter(Health.class).toJson(this);
+        return moshi.adapter(OkSynch.class).toJson(this);
     }
 
     @Override
     public Status getStatus() {
-        return Status.OK;
+        return Status.CREATED;
     }
 }

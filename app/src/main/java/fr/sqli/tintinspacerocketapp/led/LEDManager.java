@@ -105,38 +105,51 @@ public final class LEDManager {
     }
 
     /**
-     * Lance une séquence de manière asynchrone
+     * Lance une séquence d'affichage de LEDs
      * @param ledColors liste des LEDs de la séquence
+     * @param isSynchrone indique si le traitement doit être asynchrone ou non
+     * @return vrai si une séquence est déjà en cours, false sinon
      */
-    public boolean launchSequence(final LEDColors[] ledColors) {
+    public boolean launchSequence(final LEDColors[] ledColors, boolean isSynchrone) {
         if (!isSequenceRuning) {
-            isSequenceRuning = true;
-            new Thread(new Runnable() {
-                @Override
-                public void run() {
-                    try {
-                        // On éteind toutes les LEDs avant de lancer la séquence
-                        turnOffAllLEDs();
-                        Thread.currentThread().sleep(1000);
-                        int timingSquence = 500;
-
-                        for (int i=0; i < ledColors.length; i++) {
-                            Thread.currentThread().sleep(timingSquence);
-                            ledMap.get(ledColors[i]).turnOn();
-                            Thread.currentThread().sleep(timingSquence);
-                            ledMap.get(ledColors[i]).turnOff();
-                        }
-
-                        isSequenceRuning = false;
-                    } catch (IOException io) {
-                        Log.e(TAG, "", io);
-                    } catch (InterruptedException ie) {
-                        Log.e(TAG, "", ie);
+            if (isSynchrone) {
+                isSequenceRuning = true;
+                internalLaunchSequence(ledColors);
+                isSequenceRuning = false;
+            } else {
+                new Thread(new Runnable() {
+                    @Override
+                    public void run() {
+                        internalLaunchSequence(ledColors);
                     }
-                }
-            }).start();
+                }).start();
+            }
         }
         return isSequenceRuning;
+    }
+
+    private void internalLaunchSequence(LEDColors[] ledColors) {
+        try {
+            isSequenceRuning = true;
+
+            // On éteind toutes les LEDs avant de lancer la séquence
+            turnOffAllLEDs();
+            Thread.currentThread().sleep(1000);
+            int timingSequence = 500;
+
+            for (int i=0; i < ledColors.length; i++) {
+                Thread.currentThread().sleep(timingSequence);
+                ledMap.get(ledColors[i]).turnOn();
+                Thread.currentThread().sleep(timingSequence);
+                ledMap.get(ledColors[i]).turnOff();
+            }
+
+            isSequenceRuning = false;
+        } catch (IOException io) {
+            Log.e(TAG, "", io);
+        } catch (InterruptedException ie) {
+            Log.e(TAG, "", ie);
+        }
     }
 
     /**

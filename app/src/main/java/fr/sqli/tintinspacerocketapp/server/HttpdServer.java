@@ -2,13 +2,19 @@ package fr.sqli.tintinspacerocketapp.server;
 
 import android.util.Log;
 
-import com.squareup.moshi.JsonAdapter;
 import com.squareup.moshi.Moshi;
+
+import java.io.IOException;
+import java.util.List;
+import java.util.Map;
 
 import fi.iki.elonen.NanoHTTPD;
 import fr.sqli.tintinspacerocketapp.game.SimonGame;
+import fr.sqli.tintinspacerocketapp.server.responses.Forbidden;
 import fr.sqli.tintinspacerocketapp.server.responses.Health;
 import fr.sqli.tintinspacerocketapp.server.responses.HttpResponse;
+import fr.sqli.tintinspacerocketapp.server.responses.OkAsynch;
+import fr.sqli.tintinspacerocketapp.server.responses.OkSynch;
 
 /**
  * Represents the embedded HTTP server
@@ -26,13 +32,16 @@ public final class HttpdServer extends NanoHTTPD {
      */
     private SimonGame simonGame;
 
+    private static final String URI_SIMON_GAME_PREFIX = "/simon/";
+
     private Moshi moshi;
 
-    public HttpdServer() {
+    public HttpdServer() throws IOException {
         super(PORT);
 
         // Declare Json adapter for responses
         moshi = new Moshi.Builder().build();
+        simonGame = new SimonGame();
     }
 
     /**
@@ -53,11 +62,11 @@ public final class HttpdServer extends NanoHTTPD {
 
         switch (session.getMethod()) {
             case GET:
-                processingResult = processGetRequest(session.getUri());
+                processingResult = processGetRequest(session.getUri(), simonGame);
 
                 if (null != processingResult) {
                     responseContent = processingResult.toJson(moshi);
-                    responseStatus = Response.Status.OK;
+                    responseStatus = processingResult.getStatus();
                     responseMimeType = "application/json";
                 }
 
@@ -65,11 +74,11 @@ public final class HttpdServer extends NanoHTTPD {
 
                 break;
             case POST:
-                processingResult = processPostRequest(session.getUri(), simonGame);
+                processingResult = processPostRequest(session.getUri(), session.getParameters(), simonGame);
 
                 if (null != processingResult) {
                     responseContent = processingResult.toJson(moshi);
-                    responseStatus = Response.Status.CREATED;
+                    responseStatus = processingResult.getStatus();
                     responseMimeType = "application/json";
                 }
 
@@ -89,7 +98,7 @@ public final class HttpdServer extends NanoHTTPD {
      * @param uri requested API URI
      * @return response content or null
      */
-    protected HttpResponse processGetRequest(final String uri) {
+    protected HttpResponse processGetRequest(final String uri, final SimonGame simonGame) {
         HttpResponse response = null;
 
         switch (uri) {
@@ -104,16 +113,34 @@ public final class HttpdServer extends NanoHTTPD {
     /**
      * Process HTTP POST request
      * @param uri requested API URI
+     * @param parameters
      * @return response content or null
      */
-    protected HttpResponse processPostRequest(final String uri, final SimonGame simonGame) {
+    protected HttpResponse processPostRequest(final String uri, final Map<String, List<String>> parameters, final SimonGame simonGame) {
         HttpResponse response = null;
 
-        // TODO implement the game with GameSimon.java
+        // TODO refactor constantes
+        if (uri.startsWith(URI_SIMON_GAME_PREFIX)) {
+            if (uri.contains("/sequence")) {
+                boolean isSynchrone = false;
 
-        switch (uri) {
-            default:
-                break;
+                if (parameters.get("isSynchrone") != null
+                        && "true".equals(parameters.get("isSynchrone").get(0))) {
+                    Log.d("Request", "isSynchrone=true");
+                    isSynchrone = true;
+                }
+
+                if (simonGame.launchRandomSequence(isSynchrone)) {
+                    response = new Forbidden("Séquence déjà en cours d'affichage !");
+                } else {
+                    if (isSynchrone) {
+                        response = new OkSynch();
+                    } else {
+                        response = new OkAsynch();
+                    }
+                }
+
+            }
         }
 
         return response;

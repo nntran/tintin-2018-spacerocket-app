@@ -32,9 +32,8 @@ public class MainActivity extends Activity {
         setContentView(R.layout.main_layout);
         initView();
 
-        // Starting HTTP server
-        httpdserver = new HttpdServer();
-        try {
+        try {// Starting HTTP server
+            httpdserver = new HttpdServer();
             httpdserver.start();
         } catch (IOException ioe) {
             Log.e(TAG, "Erreur lors du lancement du serveur HTTP", ioe);
@@ -106,8 +105,15 @@ public class MainActivity extends Activity {
         launchSequenceButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                LEDColors[] ledColors = {LEDColors.BLUE, LEDColors.YELLOW, LEDColors.RED, LEDColors.GREEN, LEDColors.GREEN, LEDColors.GREEN};
-                ledManagerInstance.launchSequence(ledColors);
+                LEDColors[] ledColors = {
+                        LEDColors.BLUE,
+                        LEDColors.YELLOW,
+                        LEDColors.RED,
+                        LEDColors.GREEN,
+                        LEDColors.GREEN,
+                        LEDColors.GREEN
+                };
+                ledManagerInstance.launchSequence(ledColors, true);
             }
         });
 
