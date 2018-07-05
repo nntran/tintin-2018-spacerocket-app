@@ -158,11 +158,12 @@ public final class LEDManager {
     public boolean startWelcomeSequence() {
         // A faire obligatoirement quand on fait une séquence aussi longue
         if (!isSequenceRuning) {
-            isSequenceRuning = true;
             new Thread(new Runnable() {
                 @Override
                 public void run() {
                     try {
+                        isSequenceRuning = true;
+
                         int waitingTime = 300;
 
                         for (int i = 0; i < 10; i++) {
