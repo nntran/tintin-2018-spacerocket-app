@@ -179,7 +179,13 @@ public final class HttpdServer extends NanoHTTPD {
                 try {
                     int gamerId = Integer.parseInt(uriSplit[uriSplit.length - 2]);
                     final Gamer gamer = simonGame.playSequence(gamerId);
-                    response = new OkPlay(gamerId, gamer.sequence.toArray(new LEDColors[gamer.sequence.size()]));
+
+                    String[] ledColors = new String[gamer.sequence.size()];
+                    for (int i = 0; i < gamer.sequence.size(); i++) {
+                        ledColors[i] = gamer.sequence.get(i).code;
+                    }
+
+                    response = new OkPlay(gamer.remainingAttemps, ledColors);
                 } catch (GamerNotFoundException gnfe) {
                     response = new NotFound("Aucun joueur trouvé");
                 } catch (GameFinishedException gfe) {

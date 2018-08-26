@@ -87,7 +87,7 @@ public class SimonGame {
                 // suite de la partie
                 gamer.sequence.add(LEDColors.getRandomColor());
             }
-            ledManagerInstance.launchSequence(gamer.sequence.toArray(new LEDColors[gamer.sequence.size()]), false);
+            ledManagerInstance.launchSequence(gamer.sequence.toArray(new LEDColors[gamer.sequence.size()]), true);
         }
 
         return gamer;

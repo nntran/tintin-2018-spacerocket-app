@@ -3,16 +3,15 @@ package fr.sqli.tintinspacerocketapp.server.responses;
 import com.squareup.moshi.Moshi;
 
 import fi.iki.elonen.NanoHTTPD.Response.Status;
-import fr.sqli.tintinspacerocketapp.led.LEDColors;
 
 public class OkPlay implements HttpResponse {
 
     private final int remainingAttempts;
-    private final LEDColors[] ledColors;
+    private final String[] sequence;
 
-    public OkPlay(int remainingAttempts, LEDColors[] ledColors) {
+    public OkPlay(final int remainingAttempts, final String[] sequence) {
         this.remainingAttempts = remainingAttempts;
-        this.ledColors = ledColors;
+        this.sequence = sequence;
     }
 
     @Override
