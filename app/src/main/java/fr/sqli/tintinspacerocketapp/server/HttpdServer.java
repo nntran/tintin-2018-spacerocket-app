@@ -13,12 +13,17 @@ import java.util.Map;
 import fi.iki.elonen.NanoHTTPD;
 import fr.sqli.tintinspacerocketapp.game.Gamer;
 import fr.sqli.tintinspacerocketapp.game.SimonGame;
+import fr.sqli.tintinspacerocketapp.game.ex.GameFinishedException;
 import fr.sqli.tintinspacerocketapp.game.ex.GamerAlreadyPlayedException;
+import fr.sqli.tintinspacerocketapp.game.ex.GamerNotFoundException;
+import fr.sqli.tintinspacerocketapp.led.LEDColors;
 import fr.sqli.tintinspacerocketapp.server.responses.BadRequest;
 import fr.sqli.tintinspacerocketapp.server.responses.Forbidden;
 import fr.sqli.tintinspacerocketapp.server.responses.Health;
 import fr.sqli.tintinspacerocketapp.server.responses.HttpResponse;
+import fr.sqli.tintinspacerocketapp.server.responses.NotFound;
 import fr.sqli.tintinspacerocketapp.server.responses.OkAsynch;
+import fr.sqli.tintinspacerocketapp.server.responses.OkPlay;
 import fr.sqli.tintinspacerocketapp.server.responses.OkStart;
 import fr.sqli.tintinspacerocketapp.server.responses.OkSynch;
 
@@ -168,6 +173,19 @@ public final class HttpdServer extends NanoHTTPD {
                     response = new OkStart(gamer.gamerId);
                 } catch (GamerAlreadyPlayedException e) {
                     response = new Forbidden("Ce joueur a déjà joué aujourd'hui");
+                }
+            } else if (uri.contains("/play")) {
+                final String[] uriSplit = uri.split("/");
+                try {
+                    int gamerId = Integer.parseInt(uriSplit[uriSplit.length - 2]);
+                    final Gamer gamer = simonGame.playSequence(gamerId);
+                    response = new OkPlay(gamerId, gamer.sequence.toArray(new LEDColors[gamer.sequence.size()]));
+                } catch (GamerNotFoundException gnfe) {
+                    response = new NotFound("Aucun joueur trouvé");
+                } catch (GameFinishedException gfe) {
+                    response = new Forbidden("La partie est terminée (nombre de tentatives max atteint)");
+                } catch (Exception e) {
+                    response = new BadRequest("Mauvais format de requête (id du joueur non trouvé)");
                 }
             }
         }

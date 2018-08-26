@@ -10,7 +10,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import fr.sqli.tintinspacerocketapp.game.ex.GameFinishedException;
 import fr.sqli.tintinspacerocketapp.game.ex.GamerAlreadyPlayedException;
+import fr.sqli.tintinspacerocketapp.game.ex.GamerNotFoundException;
 import fr.sqli.tintinspacerocketapp.led.LEDColors;
 import fr.sqli.tintinspacerocketapp.led.LEDManager;
 
@@ -20,13 +22,15 @@ import fr.sqli.tintinspacerocketapp.led.LEDManager;
 public class SimonGame {
 
     public static final String TAG = SimonGame.class.getName();
-    // TODO implement game
+
     private LEDManager ledManagerInstance;
 
     // TODO gestion des journées de jeu
     private Map<Integer, Gamer> gamerMap = new HashMap<>();
 
     private final Integer DEMO_GAMER_ID = -1;
+
+    private final int NUMBER_MAX_OF_ATTEMPS = 3;
 
     public SimonGame() throws IOException {
         this.ledManagerInstance = LEDManager.getInstance();
@@ -60,9 +64,32 @@ public class SimonGame {
                 gamer.gamerId = generateGamerId(gamerMap.keySet());
             }
         }
-        // générer la première séquence
+
         gamerMap.put(gamer.gamerId, gamer);
         Log.d(TAG, "Initialisation d'une partie pour : " + gamer);
+        return gamer;
+    }
+
+    public Gamer playSequence(int gamerId) throws GamerNotFoundException, GameFinishedException {
+        final Gamer gamer = gamerMap.get(gamerId);
+
+        if (gamer == null) {
+            throw new GamerNotFoundException();
+        } else if (gamer.remainingAttemps == 0) {
+            throw new GameFinishedException();
+        } else {
+            if (gamer.sequence.size() == 0) {
+                // début de la partie
+                gamer.sequence.add(LEDColors.getRandomColor());
+                gamer.sequence.add(LEDColors.getRandomColor());
+                gamer.sequence.add(LEDColors.getRandomColor());
+            } else {
+                // suite de la partie
+                gamer.sequence.add(LEDColors.getRandomColor());
+            }
+            ledManagerInstance.launchSequence(gamer.sequence.toArray(new LEDColors[gamer.sequence.size()]), false);
+        }
+
         return gamer;
     }
 
@@ -76,5 +103,4 @@ public class SimonGame {
             return sortedIdList.get(sortedIdList.size() - 1) + 1;
         }
     }
-
 }

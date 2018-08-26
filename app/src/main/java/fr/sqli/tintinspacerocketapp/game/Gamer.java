@@ -1,6 +1,7 @@
 package fr.sqli.tintinspacerocketapp.game;
 
-import java.util.Arrays;
+import java.util.LinkedList;
+import java.util.List;
 
 import fr.sqli.tintinspacerocketapp.led.LEDColors;
 
@@ -13,9 +14,10 @@ public class Gamer {
     public String gamerTwitter;
     public boolean gamerGenderMale;
     public boolean isDemo = false;
-    public LEDColors[] sequence;
+    public final List<LEDColors> sequence = new LinkedList<>();
     public int score;
     public int time;
+    public int remainingAttemps = 3;
 
     @Override
     public boolean equals(Object obj) {
@@ -36,7 +38,7 @@ public class Gamer {
                 ", gamerTwitter='" + gamerTwitter + '\'' +
                 ", gamerGenderMale=" + gamerGenderMale +
                 ", isDemo=" + isDemo +
-                ", sequence=" + Arrays.toString(sequence) +
+                ", sequence=" + sequence +
                 ", score=" + score +
                 ", time=" + time +
                 '}';
