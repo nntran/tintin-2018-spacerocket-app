@@ -2,18 +2,24 @@ package fr.sqli.tintinspacerocketapp.server;
 
 import android.util.Log;
 
+import com.squareup.moshi.JsonAdapter;
 import com.squareup.moshi.Moshi;
 
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import fi.iki.elonen.NanoHTTPD;
+import fr.sqli.tintinspacerocketapp.game.Gamer;
 import fr.sqli.tintinspacerocketapp.game.SimonGame;
+import fr.sqli.tintinspacerocketapp.game.ex.GamerAlreadyPlayedException;
+import fr.sqli.tintinspacerocketapp.server.responses.BadRequest;
 import fr.sqli.tintinspacerocketapp.server.responses.Forbidden;
 import fr.sqli.tintinspacerocketapp.server.responses.Health;
 import fr.sqli.tintinspacerocketapp.server.responses.HttpResponse;
 import fr.sqli.tintinspacerocketapp.server.responses.OkAsynch;
+import fr.sqli.tintinspacerocketapp.server.responses.OkStart;
 import fr.sqli.tintinspacerocketapp.server.responses.OkSynch;
 
 /**
@@ -36,11 +42,14 @@ public final class HttpdServer extends NanoHTTPD {
 
     private Moshi moshi;
 
+    private JsonAdapter<Gamer> moshiGamer;
+
     public HttpdServer() throws IOException {
         super(PORT);
 
         // Declare Json adapter for responses
         moshi = new Moshi.Builder().build();
+        moshiGamer = new Moshi.Builder().build().adapter(Gamer.class);
         simonGame = new SimonGame();
     }
 
@@ -74,7 +83,18 @@ public final class HttpdServer extends NanoHTTPD {
 
                 break;
             case POST:
-                processingResult = processPostRequest(session.getUri(), session.getParameters(), simonGame);
+                try {
+                    final Map<String, String> map = new HashMap<>();
+                    session.parseBody(map);
+                    final String jsonBodyContent = map.get("postData");
+                    processingResult = processPostRequest(session.getUri(), session.getParameters(), jsonBodyContent, simonGame);
+                } catch (IOException e) {
+                    processingResult = new BadRequest("Corps de la requête incorrect");
+                    e.printStackTrace();
+                } catch (ResponseException e) {
+                    processingResult = new BadRequest("Corps de la requête incorrect");
+                    e.printStackTrace();
+                }
 
                 if (null != processingResult) {
                     responseContent = processingResult.toJson(moshi);
@@ -114,9 +134,10 @@ public final class HttpdServer extends NanoHTTPD {
      * Process HTTP POST request
      * @param uri requested API URI
      * @param parameters
+     * @param jsonBodyContent
      * @return response content or null
      */
-    protected HttpResponse processPostRequest(final String uri, final Map<String, List<String>> parameters, final SimonGame simonGame) {
+    protected HttpResponse processPostRequest(final String uri, final Map<String, List<String>> parameters, final String jsonBodyContent, final SimonGame simonGame) throws IOException {
         HttpResponse response = null;
 
         // TODO refactor constantes
@@ -140,6 +161,14 @@ public final class HttpdServer extends NanoHTTPD {
                     }
                 }
 
+            } else if (uri.contains("/start")) {
+                final Gamer gamer;
+                try {
+                    gamer = simonGame.startNewGame(moshiGamer.fromJson(jsonBodyContent));
+                    response = new OkStart(gamer.gamerId);
+                } catch (GamerAlreadyPlayedException e) {
+                    response = new Forbidden("Ce joueur a déjà joué aujourd'hui");
+                }
             }
         }
 
