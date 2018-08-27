@@ -6,10 +6,10 @@ import java.util.List;
 import java.util.Random;
 
 public enum LEDColors {
-    BLUE("2"),
-    YELLOW("1"),
-    RED("3"),
-    GREEN("0");
+    BLUE(Codes.BLUE),
+    YELLOW(Codes.YELLOW),
+    RED(Codes.RED),
+    GREEN(Codes.GREEN);
 
     private static final List<LEDColors> VALUES = Collections.unmodifiableList(Arrays.asList(values()));
     private static final int SIZE = VALUES.size();
@@ -28,5 +28,31 @@ public enum LEDColors {
 
     public static LEDColors getRandomColor() {
         return VALUES.get(RANDOM.nextInt(SIZE));
+    }
+
+    public static LEDColors getByCode(final String code) {
+        LEDColors color = null;
+        switch(code) {
+            case Codes.BLUE:
+                color = BLUE;
+                break;
+            case Codes.YELLOW:
+                color = YELLOW;
+                break;
+            case Codes.RED:
+                color = RED;
+                break;
+            case Codes.GREEN:
+                color = GREEN;
+                break;
+        }
+        return color;
+    }
+
+    private static class Codes {
+        public static final String GREEN = "0";
+        public static final String RED = "3";
+        public static final String YELLOW = "1";
+        public static final String BLUE = "2";
     }
 }

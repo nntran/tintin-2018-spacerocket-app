@@ -1,5 +1,6 @@
 package fr.sqli.tintinspacerocketapp.server;
 
+import android.support.annotation.NonNull;
 import android.util.Log;
 
 import com.squareup.moshi.JsonAdapter;
@@ -11,12 +12,15 @@ import java.util.List;
 import java.util.Map;
 
 import fi.iki.elonen.NanoHTTPD;
+import fr.sqli.tintinspacerocketapp.game.Attemp;
+import fr.sqli.tintinspacerocketapp.game.AttempResult;
 import fr.sqli.tintinspacerocketapp.game.Gamer;
 import fr.sqli.tintinspacerocketapp.game.SimonGame;
 import fr.sqli.tintinspacerocketapp.game.ex.GameFinishedException;
 import fr.sqli.tintinspacerocketapp.game.ex.GamerAlreadyPlayedException;
 import fr.sqli.tintinspacerocketapp.game.ex.GamerNotFoundException;
 import fr.sqli.tintinspacerocketapp.led.LEDColors;
+import fr.sqli.tintinspacerocketapp.server.request.Try;
 import fr.sqli.tintinspacerocketapp.server.responses.BadRequest;
 import fr.sqli.tintinspacerocketapp.server.responses.Forbidden;
 import fr.sqli.tintinspacerocketapp.server.responses.Health;
@@ -26,6 +30,7 @@ import fr.sqli.tintinspacerocketapp.server.responses.OkAsynch;
 import fr.sqli.tintinspacerocketapp.server.responses.OkPlay;
 import fr.sqli.tintinspacerocketapp.server.responses.OkStart;
 import fr.sqli.tintinspacerocketapp.server.responses.OkSynch;
+import fr.sqli.tintinspacerocketapp.server.responses.OkTry;
 
 /**
  * Represents the embedded HTTP server
@@ -49,12 +54,15 @@ public final class HttpdServer extends NanoHTTPD {
 
     private JsonAdapter<Gamer> moshiGamer;
 
+    private JsonAdapter<Try> moshiTry;
+
     public HttpdServer() throws IOException {
         super(PORT);
 
         // Declare Json adapter for responses
         moshi = new Moshi.Builder().build();
         moshiGamer = new Moshi.Builder().build().adapter(Gamer.class);
+        moshiTry = new Moshi.Builder().build().adapter(Try.class);
         simonGame = new SimonGame();
     }
 
@@ -92,6 +100,7 @@ public final class HttpdServer extends NanoHTTPD {
                     final Map<String, String> map = new HashMap<>();
                     session.parseBody(map);
                     final String jsonBodyContent = map.get("postData");
+                    Log.d(TAG, "Request body : " + jsonBodyContent);
                     processingResult = processPostRequest(session.getUri(), session.getParameters(), jsonBodyContent, simonGame);
                 } catch (IOException e) {
                     processingResult = new BadRequest("Corps de la requête incorrect");
@@ -148,54 +157,109 @@ public final class HttpdServer extends NanoHTTPD {
         // TODO refactor constantes
         if (uri.startsWith(URI_SIMON_GAME_PREFIX)) {
             if (uri.contains("/sequence")) {
-                boolean isSynchrone = false;
-
-                if (parameters.get("isSynchrone") != null
-                        && "true".equals(parameters.get("isSynchrone").get(0))) {
-                    Log.d("Request", "isSynchrone=true");
-                    isSynchrone = true;
-                }
-
-                if (simonGame.launchRandomSequence(isSynchrone)) {
-                    response = new Forbidden("Séquence déjà en cours d'affichage !");
-                } else {
-                    if (isSynchrone) {
-                        response = new OkSynch();
-                    } else {
-                        response = new OkAsynch();
-                    }
-                }
-
+                response = internalPostSequence(parameters, simonGame);
             } else if (uri.contains("/start")) {
-                final Gamer gamer;
-                try {
-                    gamer = simonGame.startNewGame(moshiGamer.fromJson(jsonBodyContent));
-                    response = new OkStart(gamer.gamerId);
-                } catch (GamerAlreadyPlayedException e) {
-                    response = new Forbidden("Ce joueur a déjà joué aujourd'hui");
-                }
+                response = internalPostSimonStart(jsonBodyContent, simonGame);
             } else if (uri.contains("/play")) {
-                final String[] uriSplit = uri.split("/");
-                try {
-                    int gamerId = Integer.parseInt(uriSplit[uriSplit.length - 2]);
-                    final Gamer gamer = simonGame.playSequence(gamerId);
-
-                    String[] ledColors = new String[gamer.sequence.size()];
-                    for (int i = 0; i < gamer.sequence.size(); i++) {
-                        ledColors[i] = gamer.sequence.get(i).code;
-                    }
-
-                    response = new OkPlay(gamer.remainingAttemps, ledColors);
-                } catch (GamerNotFoundException gnfe) {
-                    response = new NotFound("Aucun joueur trouvé");
-                } catch (GameFinishedException gfe) {
-                    response = new Forbidden("La partie est terminée (nombre de tentatives max atteint)");
-                } catch (Exception e) {
-                    response = new BadRequest("Mauvais format de requête (id du joueur non trouvé)");
-                }
+                response = internalPostPlay(uri, simonGame);
+            } else if (uri.contains("/try")) {
+                response = internalPostTry(uri, jsonBodyContent, simonGame);
             }
         }
 
+        return response;
+    }
+
+    @NonNull
+    private HttpResponse internalPostPlay(final String uri, final SimonGame simonGame) {
+        HttpResponse response;
+        try {
+            final Gamer gamer = simonGame.playSequence(getGamerIdFromUri(uri));
+            response = new OkPlay(gamer.remainingAttemps, convertLEDColorsListToArray(gamer.sequence));
+        } catch (GamerNotFoundException gnfe) {
+            response = new NotFound("Aucun joueur trouvé");
+        } catch (GameFinishedException gfe) {
+            response = new Forbidden("La partie est terminée (nombre de tentatives max atteint)");
+        } catch (Exception e) {
+            response = new BadRequest("Mauvais format de requête (id du joueur non trouvé)");
+        }
+        return response;
+    }
+
+    @NonNull
+    private HttpResponse internalPostTry(final String uri, final String jsonBodyContent, final SimonGame simonGame) {
+        HttpResponse response;
+        try {
+            final Attemp attemp = new Attemp();
+            final Try aTry = moshiTry.fromJson(jsonBodyContent);
+
+            for (final String ledColorCode : aTry.sequence) {
+                attemp.sequence.add(LEDColors.getByCode(ledColorCode));
+            }
+
+            final AttempResult attempResult = simonGame.trySequence(getGamerIdFromUri(uri), attemp);
+            response = new OkTry(attempResult.remainingAttemps, convertLEDColorsListToArray(attempResult.correctSequence), attempResult.result);
+
+        } catch (GamerNotFoundException gnfe) {
+            response = new NotFound("Aucun joueur trouvé");
+        } catch (GameFinishedException gfe) {
+            response = new Forbidden("La partie est terminée (nombre de tentatives max atteint)");
+        } catch (Exception e) {
+            response = new BadRequest("Mauvais format de requête (id du joueur non trouvé ou contenu incorrect)");
+        }
+        return response;
+    }
+
+    @NonNull
+    private HttpResponse internalPostSimonStart(final String jsonBodyContent, final SimonGame simonGame) throws IOException {
+        HttpResponse response;
+        try {
+            final Gamer gamer = simonGame.startNewGame(moshiGamer.fromJson(jsonBodyContent));
+            response = new OkStart(gamer.gamerId);
+        } catch (GamerAlreadyPlayedException e) {
+            response = new Forbidden("Ce joueur a déjà joué aujourd'hui");
+        }
+        return response;
+    }
+
+
+    @NonNull
+    private String[] convertLEDColorsListToArray(final List<LEDColors> sequence) {
+        String[] ledColors = null;
+        if (sequence != null) {
+            ledColors = new String[sequence.size()];
+            for (int i = 0; i < sequence.size(); i++) {
+                ledColors[i] = sequence.get(i).code;
+            }
+        }
+        return ledColors;
+    }
+
+    private int getGamerIdFromUri(String uri) {
+        final String[] uriSplit = uri.split("/");
+        return Integer.parseInt(uriSplit[uriSplit.length - 2]);
+    }
+
+    @NonNull
+    private HttpResponse internalPostSequence(final Map<String, List<String>> parameters, final SimonGame simonGame) {
+        HttpResponse response;
+        boolean isSynchrone = false;
+
+        if (parameters.get("isSynchrone") != null
+                && "true".equals(parameters.get("isSynchrone").get(0))) {
+            Log.d("Request", "isSynchrone=true");
+            isSynchrone = true;
+        }
+
+        if (simonGame.launchRandomSequence(isSynchrone)) {
+            response = new Forbidden("Séquence déjà en cours d'affichage !");
+        } else {
+            if (isSynchrone) {
+                response = new OkSynch();
+            } else {
+                response = new OkAsynch();
+            }
+        }
         return response;
     }
 }

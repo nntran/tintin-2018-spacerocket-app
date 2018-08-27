@@ -15,6 +15,7 @@ import fr.sqli.tintinspacerocketapp.game.ex.GamerAlreadyPlayedException;
 import fr.sqli.tintinspacerocketapp.game.ex.GamerNotFoundException;
 import fr.sqli.tintinspacerocketapp.led.LEDColors;
 import fr.sqli.tintinspacerocketapp.led.LEDManager;
+import fr.sqli.tintinspacerocketapp.server.request.Try;
 
 /**
  * Represents the game
@@ -57,39 +58,85 @@ public class SimonGame {
             gamerMap.remove(DEMO_GAMER_ID);
             gamer.gamerId = DEMO_GAMER_ID;
             gamer.isDemo = true;
+            gamerMap.put(gamer.gamerId, gamer);
+            Log.d(TAG, "Initialisation d'une partie démo");
         } else {
-            if (gamerMap.values().contains(gamer)) {
-                throw new GamerAlreadyPlayedException();
+            final Gamer possibleGamer = gamerMap.get(gamer.gamerId);
+            if (possibleGamer != null) {
+                if (possibleGamer.remainingAttemps > 0) {
+                    Log.d(TAG, "Reprise de la partie pour : " + gamer);
+                } else {
+                    Log.d(TAG, "Ce joueur a déjà joué : " + gamer);
+                    throw new GamerAlreadyPlayedException();
+                }
             } else {
                 gamer.gamerId = generateGamerId(gamerMap.keySet());
+                gamerMap.put(gamer.gamerId, gamer);
+                Log.d(TAG, "Initialisation d'une partie pour : " + gamer);
             }
         }
 
-        gamerMap.put(gamer.gamerId, gamer);
-        Log.d(TAG, "Initialisation d'une partie pour : " + gamer);
         return gamer;
     }
 
     public Gamer playSequence(int gamerId) throws GamerNotFoundException, GameFinishedException {
-        final Gamer gamer = gamerMap.get(gamerId);
-
-        if (gamer == null) {
-            throw new GamerNotFoundException();
-        } else if (gamer.remainingAttemps == 0) {
-            throw new GameFinishedException();
+        final Gamer gamer = getGamerAndCheckGame(gamerId);
+        if (gamer.sequence.size() == 0) {
+            // début de la partie
+            gamer.sequence.add(LEDColors.getRandomColor());
+            gamer.sequence.add(LEDColors.getRandomColor());
+            gamer.sequence.add(LEDColors.getRandomColor());
         } else {
-            if (gamer.sequence.size() == 0) {
-                // début de la partie
-                gamer.sequence.add(LEDColors.getRandomColor());
-                gamer.sequence.add(LEDColors.getRandomColor());
-                gamer.sequence.add(LEDColors.getRandomColor());
-            } else {
-                // suite de la partie
-                gamer.sequence.add(LEDColors.getRandomColor());
+            // suite de la partie
+            gamer.sequence.add(LEDColors.getRandomColor());
+        }
+        ledManagerInstance.launchSequence(gamer.sequence.toArray(new LEDColors[gamer.sequence.size()]), true);
+        return gamer;
+    }
+
+
+    public AttempResult trySequence(int gamerId, final Attemp attemp) throws GameFinishedException, GamerNotFoundException {
+        final Gamer gamer = getGamerAndCheckGame(gamerId);
+        boolean isAttempInError = false;
+        for (int i=0; i < gamer.sequence.size() && !isAttempInError; i++) {
+            if (!gamer.sequence.get(i).equals(attemp.sequence.get(i))) {
+                isAttempInError = true;
             }
-            ledManagerInstance.launchSequence(gamer.sequence.toArray(new LEDColors[gamer.sequence.size()]), true);
         }
 
+        final AttempResult attempResult = new AttempResult();
+
+        if (isAttempInError) {
+            // Séquence incorrecte
+            gamer.remainingAttemps--;
+            if (gamer.remainingAttemps == 0) {
+                // Nombre d'essais max atteint
+                Log.d(TAG, "Partie terminée");
+                ledManagerInstance.startWelcomeSequence();
+                throw new GameFinishedException();
+            } else {
+                attempResult.result = false;
+                attempResult.remainingAttemps = gamer.remainingAttemps;
+                attempResult.correctSequence = gamer.sequence;
+            }
+        } else {
+            // Séquence correcte
+            gamer.time += attemp.duration;
+            attempResult.result = true;
+        }
+
+        return attempResult;
+    }
+
+    public Gamer getGamerAndCheckGame(int gamerId) throws GamerNotFoundException, GameFinishedException {
+        final Gamer gamer = gamerMap.get(gamerId);
+        if (gamer == null) {
+            Log.d(TAG, "Joueur non trouvé");
+            throw new GamerNotFoundException();
+        } else if (gamer.remainingAttemps == 0) {
+            Log.d(TAG, "Partie déjà terminée");
+            throw new GameFinishedException();
+        }
         return gamer;
     }
 

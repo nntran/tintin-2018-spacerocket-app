@@ -16,7 +16,7 @@ public class Gamer {
     public boolean isDemo = false;
     public final List<LEDColors> sequence = new LinkedList<>();
     public int score;
-    public int time;
+    public long time;
     public int remainingAttemps = 3;
 
     @Override

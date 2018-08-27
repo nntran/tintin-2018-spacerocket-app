@@ -111,6 +111,7 @@ public final class LEDManager {
      * @return vrai si une séquence est déjà en cours, false sinon
      */
     public boolean launchSequence(final LEDColors[] ledColors, boolean isSynchrone) {
+        Log.d(TAG,"Lancement de la séquence " + ledColors);
         if (!isSequenceRuning) {
             if (isSynchrone) {
                 isSequenceRuning = true;
@@ -135,7 +136,7 @@ public final class LEDManager {
             // On éteind toutes les LEDs avant de lancer la séquence
             turnOffAllLEDs();
             Thread.currentThread().sleep(1000);
-            int timingSequence = 500;
+            int timingSequence = 400;
 
             for (int i=0; i < ledColors.length; i++) {
                 Thread.currentThread().sleep(timingSequence);
