@@ -15,7 +15,6 @@ import fr.sqli.tintinspacerocketapp.game.ex.GamerAlreadyPlayedException;
 import fr.sqli.tintinspacerocketapp.game.ex.GamerNotFoundException;
 import fr.sqli.tintinspacerocketapp.led.LEDColors;
 import fr.sqli.tintinspacerocketapp.led.LEDManager;
-import fr.sqli.tintinspacerocketapp.server.request.Try;
 
 /**
  * Represents the game
@@ -61,7 +60,7 @@ public class SimonGame {
             gamerMap.put(gamer.gamerId, gamer);
             Log.d(TAG, "Initialisation d'une partie démo");
         } else {
-            final Gamer possibleGamer = gamerMap.get(gamer.gamerId);
+            final Gamer possibleGamer = findGamer(gamer, gamerMap);
             if (possibleGamer != null) {
                 if (possibleGamer.remainingAttemps > 0) {
                     Log.d(TAG, "Reprise de la partie pour : " + gamer);
@@ -94,7 +93,6 @@ public class SimonGame {
         return gamer;
     }
 
-
     public AttempResult trySequence(int gamerId, final Attemp attemp) throws GameFinishedException, GamerNotFoundException {
         final Gamer gamer = getGamerAndCheckGame(gamerId);
         boolean isAttempInError = false;
@@ -106,12 +104,15 @@ public class SimonGame {
 
         final AttempResult attempResult = new AttempResult();
 
+        gamer.time += attemp.time;
+
         if (isAttempInError) {
             // Séquence incorrecte
             gamer.remainingAttemps--;
+
             if (gamer.remainingAttemps == 0) {
                 // Nombre d'essais max atteint
-                Log.d(TAG, "Partie terminée");
+                Log.d(TAG, "Partie terminée avec un score de " + gamer.score + " et une durée totale de " + gamer.time);
                 ledManagerInstance.startWelcomeSequence();
                 throw new GameFinishedException();
             } else {
@@ -121,14 +122,19 @@ public class SimonGame {
             }
         } else {
             // Séquence correcte
-            gamer.time += attemp.duration;
+            if (gamer.sequence.size() <= 3) {
+                gamer.score = 0;
+            } else {
+                // -1 car la séquence enregistrée représente la dernière séquence tentée donc forcément loupé
+                gamer.score = gamer.sequence.size() - 1;
+            }
             attempResult.result = true;
         }
 
         return attempResult;
     }
 
-    public Gamer getGamerAndCheckGame(int gamerId) throws GamerNotFoundException, GameFinishedException {
+    private Gamer getGamerAndCheckGame(int gamerId) throws GamerNotFoundException, GameFinishedException {
         final Gamer gamer = gamerMap.get(gamerId);
         if (gamer == null) {
             Log.d(TAG, "Joueur non trouvé");
@@ -138,6 +144,16 @@ public class SimonGame {
             throw new GameFinishedException();
         }
         return gamer;
+    }
+
+    private Gamer findGamer(final Gamer gamer, final Map<Integer, Gamer> gamers) {
+        Gamer foundGamer = null;
+        for (int i=0; i < gamers.size() && foundGamer == null; i++) {
+            if (gamers.get(i).equals(gamer)) {
+                foundGamer = gamers.get(i);
+            }
+        }
+        return foundGamer;
     }
 
     protected static int generateGamerId(final Set<Integer> gamersIdsSet) {

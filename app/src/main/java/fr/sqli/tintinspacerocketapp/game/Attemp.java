@@ -7,5 +7,5 @@ import fr.sqli.tintinspacerocketapp.led.LEDColors;
 
 public class Attemp {
     public List<LEDColors> sequence = new LinkedList<>();
-    public long duration;
+    public long time;
 }

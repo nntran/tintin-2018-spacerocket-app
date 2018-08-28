@@ -197,6 +197,8 @@ public final class HttpdServer extends NanoHTTPD {
                 attemp.sequence.add(LEDColors.getByCode(ledColorCode));
             }
 
+            attemp.time = aTry.time;
+
             final AttempResult attempResult = simonGame.trySequence(getGamerIdFromUri(uri), attemp);
             response = new OkTry(attempResult.remainingAttemps, convertLEDColorsListToArray(attempResult.correctSequence), attempResult.result);
 

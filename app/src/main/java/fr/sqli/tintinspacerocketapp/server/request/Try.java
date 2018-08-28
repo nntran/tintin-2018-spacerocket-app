@@ -2,5 +2,5 @@ package fr.sqli.tintinspacerocketapp.server.request;
 
 public class Try {
     public String[] sequence;
-    public long duration;
+    public long time;
 }
