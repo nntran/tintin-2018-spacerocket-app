@@ -15,12 +15,14 @@ import fi.iki.elonen.NanoHTTPD;
 import fr.sqli.tintinspacerocketapp.game.Attemp;
 import fr.sqli.tintinspacerocketapp.game.AttempResult;
 import fr.sqli.tintinspacerocketapp.game.Gamer;
+import fr.sqli.tintinspacerocketapp.game.Score;
 import fr.sqli.tintinspacerocketapp.game.SimonGame;
 import fr.sqli.tintinspacerocketapp.game.ex.GameFinishedException;
+import fr.sqli.tintinspacerocketapp.game.ex.GameNotFinishedException;
 import fr.sqli.tintinspacerocketapp.game.ex.GamerAlreadyPlayedException;
 import fr.sqli.tintinspacerocketapp.game.ex.GamerNotFoundException;
 import fr.sqli.tintinspacerocketapp.led.LEDColors;
-import fr.sqli.tintinspacerocketapp.server.request.Try;
+import fr.sqli.tintinspacerocketapp.server.requests.Try;
 import fr.sqli.tintinspacerocketapp.server.responses.BadRequest;
 import fr.sqli.tintinspacerocketapp.server.responses.Forbidden;
 import fr.sqli.tintinspacerocketapp.server.responses.Health;
@@ -28,6 +30,7 @@ import fr.sqli.tintinspacerocketapp.server.responses.HttpResponse;
 import fr.sqli.tintinspacerocketapp.server.responses.NotFound;
 import fr.sqli.tintinspacerocketapp.server.responses.OkAsynch;
 import fr.sqli.tintinspacerocketapp.server.responses.OkPlay;
+import fr.sqli.tintinspacerocketapp.server.responses.OkScore;
 import fr.sqli.tintinspacerocketapp.server.responses.OkStart;
 import fr.sqli.tintinspacerocketapp.server.responses.OkSynch;
 import fr.sqli.tintinspacerocketapp.server.responses.OkTry;
@@ -135,10 +138,19 @@ public final class HttpdServer extends NanoHTTPD {
     protected HttpResponse processGetRequest(final String uri, final SimonGame simonGame) {
         HttpResponse response = null;
 
-        switch (uri) {
-            case "/health":
-                response = new Health();
-                break;
+        if (uri.equals("/health")) {
+            response = new Health();
+        } else if (uri.endsWith("/score")) {
+            try {
+                final Score score = simonGame.getScore(getGamerIdFromUri(uri));
+                response = new OkScore(score.score, score.time);
+            } catch (GameNotFinishedException gnfe) {
+                response = new Forbidden("Partie en cours, score non consultable");
+            } catch (GamerNotFoundException gnfe) {
+                response = new NotFound("Aucun joueur trouvé");
+            } catch (Exception e) {
+                response = new BadRequest("Mauvais format de requête (id du joueur non trouvé)");
+            }
         }
 
         return response;

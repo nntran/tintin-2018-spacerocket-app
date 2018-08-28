@@ -11,6 +11,7 @@ import java.util.Map;
 import java.util.Set;
 
 import fr.sqli.tintinspacerocketapp.game.ex.GameFinishedException;
+import fr.sqli.tintinspacerocketapp.game.ex.GameNotFinishedException;
 import fr.sqli.tintinspacerocketapp.game.ex.GamerAlreadyPlayedException;
 import fr.sqli.tintinspacerocketapp.game.ex.GamerNotFoundException;
 import fr.sqli.tintinspacerocketapp.led.LEDColors;
@@ -122,6 +123,7 @@ public class SimonGame {
             }
         } else {
             // Séquence correcte
+            // Calcul du score
             if (gamer.sequence.size() <= 3) {
                 gamer.score = 0;
             } else {
@@ -132,6 +134,24 @@ public class SimonGame {
         }
 
         return attempResult;
+    }
+
+
+    public Score getScore(int gamerId) throws GamerNotFoundException, GameNotFinishedException {
+        final Score score = new Score();
+        try {
+            final Gamer gamer = getGamerAndCheckGame(gamerId);
+            if (gamer.remainingAttemps > 0) {
+                throw new GameNotFinishedException();
+            }
+            score.score = gamer.score;
+            score.time = gamer.time;
+        } catch (GameFinishedException e) {
+            final Gamer gamer = gamerMap.get(gamerId);
+            score.score = gamer.score;
+            score.time = gamer.time;
+        }
+        return score;
     }
 
     private Gamer getGamerAndCheckGame(int gamerId) throws GamerNotFoundException, GameFinishedException {

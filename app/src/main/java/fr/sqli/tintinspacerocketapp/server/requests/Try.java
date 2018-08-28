@@ -1,4 +1,4 @@
-package fr.sqli.tintinspacerocketapp.server.request;
+package fr.sqli.tintinspacerocketapp.server.requests;
 
 public class Try {
     public String[] sequence;
