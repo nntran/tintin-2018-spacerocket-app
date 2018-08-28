@@ -31,8 +31,6 @@ public class SimonGame {
 
     private final Integer DEMO_GAMER_ID = -1;
 
-    private final int NUMBER_MAX_OF_ATTEMPS = 3;
-
     public SimonGame() throws IOException {
         this.ledManagerInstance = LEDManager.getInstance();
     }
@@ -67,7 +65,7 @@ public class SimonGame {
                     Log.d(TAG, "Reprise de la partie pour : " + gamer);
                 } else {
                     Log.d(TAG, "Ce joueur a déjà joué : " + gamer);
-                    throw new GamerAlreadyPlayedException();
+                    throw new GamerAlreadyPlayedException(possibleGamer.gamerId);
                 }
             } else {
                 gamer.gamerId = generateGamerId(gamerMap.keySet());
