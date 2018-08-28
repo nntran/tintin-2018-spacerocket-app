@@ -12,7 +12,7 @@ public class Gamer {
     public String gamerEmail;
     public String gamerCompany;
     public String gamerTwitter;
-    public boolean gamerGenderMale;
+    public boolean gamerContact;
     public boolean isDemo = false;
     public final List<LEDColors> sequence = new LinkedList<>();
     public int score;
@@ -36,7 +36,7 @@ public class Gamer {
                 ", gamerEmail='" + gamerEmail + '\'' +
                 ", gamerCompany='" + gamerCompany + '\'' +
                 ", gamerTwitter='" + gamerTwitter + '\'' +
-                ", gamerGenderMale=" + gamerGenderMale +
+                ", gamerContact=" + gamerContact +
                 ", isDemo=" + isDemo +
                 ", sequence=" + sequence +
                 ", score=" + score +

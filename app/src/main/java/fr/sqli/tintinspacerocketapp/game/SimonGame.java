@@ -168,11 +168,13 @@ public class SimonGame {
 
     private Gamer findGamer(final Gamer gamer, final Map<Integer, Gamer> gamers) {
         Gamer foundGamer = null;
-        for (int i=0; i < gamers.size() && foundGamer == null; i++) {
-            if (gamers.get(i).equals(gamer)) {
-                foundGamer = gamers.get(i);
+        for (final Gamer existingGamer : gamers.values()) {
+            if (existingGamer.equals(gamer)) {
+                foundGamer = existingGamer;
+                break;
             }
         }
+
         return foundGamer;
     }
 
