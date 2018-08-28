@@ -1,5 +1,7 @@
 package fr.sqli.tintinspacerocketapp.server.responses;
 
+import android.util.Log;
+
 import com.squareup.moshi.Moshi;
 
 import fi.iki.elonen.NanoHTTPD.Response.Status;
@@ -16,7 +18,9 @@ public class OkPlay implements HttpResponse {
 
     @Override
     public String toJson(final Moshi moshi) {
-        return moshi.adapter(OkPlay.class).toJson(this);
+        String toJson = moshi.adapter(OkPlay.class).toJson(this);
+        Log.d(getClass().getName(), "Response body : " + toJson);
+        return toJson;
     }
 
     @Override

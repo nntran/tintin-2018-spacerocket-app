@@ -7,9 +7,11 @@ import fi.iki.elonen.NanoHTTPD.Response.Status;
 public class OkStart implements HttpResponse {
 
     private final int gamerId;
+    private boolean gamerResume = false;
 
-    public OkStart(int gamerId) {
+    public OkStart(int gamerId, boolean gamerResume) {
         this.gamerId = gamerId;
+        this.gamerResume = gamerResume;
     }
 
     @Override

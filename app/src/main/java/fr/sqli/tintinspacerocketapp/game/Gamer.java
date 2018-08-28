@@ -13,6 +13,7 @@ public class Gamer {
     public String gamerCompany;
     public String gamerTwitter;
     public boolean gamerContact;
+    public boolean gamerResume = false;
     public boolean isDemo = false;
     public final List<LEDColors> sequence = new LinkedList<>();
     public int score;

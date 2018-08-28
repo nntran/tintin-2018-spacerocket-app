@@ -52,6 +52,7 @@ public class SimonGame {
     }
 
     public final Gamer startNewGame(final Gamer gamer) throws GamerAlreadyPlayedException {
+        Gamer newGamer = gamer;
         if (gamer.gamerFirstname != null && gamer.gamerEmail.equalsIgnoreCase("Démo")) {
             gamerMap.remove(DEMO_GAMER_ID);
             gamer.gamerId = DEMO_GAMER_ID;
@@ -62,9 +63,12 @@ public class SimonGame {
             final Gamer possibleGamer = findGamer(gamer, gamerMap);
             if (possibleGamer != null) {
                 if (possibleGamer.remainingAttemps > 0) {
-                    Log.d(TAG, "Reprise de la partie pour : " + gamer);
+                    possibleGamer.gamerResume = true;
+                    newGamer = possibleGamer;
+                    Log.d(TAG, "Reprise de la partie pour : " + newGamer);
                 } else {
-                    Log.d(TAG, "Ce joueur a déjà joué : " + gamer);
+                    newGamer = possibleGamer;
+                    Log.d(TAG, "Ce joueur a déjà joué : " + newGamer);
                     throw new GamerAlreadyPlayedException(possibleGamer.gamerId);
                 }
             } else {
@@ -74,19 +78,26 @@ public class SimonGame {
             }
         }
 
-        return gamer;
+        return newGamer;
     }
 
     public Gamer playSequence(int gamerId) throws GamerNotFoundException, GameFinishedException {
         final Gamer gamer = getGamerAndCheckGame(gamerId);
-        if (gamer.sequence.size() == 0) {
-            // début de la partie
-            gamer.sequence.add(LEDColors.getRandomColor());
-            gamer.sequence.add(LEDColors.getRandomColor());
-            gamer.sequence.add(LEDColors.getRandomColor());
+        if (!gamer.gamerResume) {
+            Log.d(TAG, "Génération prochaine séquence");
+            if (gamer.sequence.size() == 0) {
+                // début de la partie
+                gamer.sequence.add(LEDColors.getRandomColor());
+                gamer.sequence.add(LEDColors.getRandomColor());
+                gamer.sequence.add(LEDColors.getRandomColor());
+            } else {
+                // suite de la partie
+                gamer.sequence.add(LEDColors.getRandomColor());
+            }
         } else {
-            // suite de la partie
-            gamer.sequence.add(LEDColors.getRandomColor());
+            // reprise d'une partie, on rejoue la dernière séquence
+            Log.d(TAG, "Reprise d'une partie, pas de génération prochaine séquence");
+            gamer.gamerResume = false;
         }
         ledManagerInstance.launchSequence(gamer.sequence.toArray(new LEDColors[gamer.sequence.size()]), true);
         return gamer;
@@ -111,27 +122,36 @@ public class SimonGame {
 
             if (gamer.remainingAttemps == 0) {
                 // Nombre d'essais max atteint
-                Log.d(TAG, "Partie terminée avec un score de " + gamer.score + " et une durée totale de " + gamer.time);
+                // Mise à jour du score finale
+                internalUpdateScore(gamer);
                 ledManagerInstance.startWelcomeSequence();
+                Log.d(TAG, "Partie terminée avec un score de " + gamer.score + " et une durée totale de " + gamer.time);
                 throw new GameFinishedException();
             } else {
                 attempResult.result = false;
                 attempResult.remainingAttemps = gamer.remainingAttemps;
                 attempResult.correctSequence = gamer.sequence;
+                Log.d(TAG, "Tentative manquée");
             }
         } else {
-            // Séquence correcte
-            // Calcul du score
-            if (gamer.sequence.size() <= 3) {
-                gamer.score = 0;
-            } else {
-                // -1 car la séquence enregistrée représente la dernière séquence tentée donc forcément loupé
-                gamer.score = gamer.sequence.size() - 1;
-            }
+            internalUpdateScore(gamer);
             attempResult.result = true;
+            Log.d(TAG, "Tentative réussie");
         }
 
         return attempResult;
+    }
+
+    private void internalUpdateScore(Gamer gamer) {
+        // Séquence correcte
+        // Calcul du score
+        if (gamer.sequence.size() <= 3) {
+            gamer.score = 0;
+        } else {
+            // Mise à jour du score
+            // -1 car la séquence enregistrée représente la dernière séquence tentée donc forcément loupé
+            gamer.score = gamer.sequence.size() - 1;
+        }
     }
 
 
@@ -169,6 +189,7 @@ public class SimonGame {
         for (final Gamer existingGamer : gamers.values()) {
             if (existingGamer.equals(gamer)) {
                 foundGamer = existingGamer;
+                Log.d(TAG, "Joueur existant trouvé : " + foundGamer);
                 break;
             }
         }

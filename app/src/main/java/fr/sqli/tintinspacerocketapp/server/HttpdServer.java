@@ -229,7 +229,7 @@ public final class HttpdServer extends NanoHTTPD {
         HttpResponse response;
         try {
             final Gamer gamer = simonGame.startNewGame(moshiGamer.fromJson(jsonBodyContent));
-            response = new OkStart(gamer.gamerId);
+            response = new OkStart(gamer.gamerId, gamer.gamerResume);
         } catch (GamerAlreadyPlayedException e) {
             response = new Forbidden("La partie est terminée (nombre de tentatives max atteint)", e.gamerId);
         }
