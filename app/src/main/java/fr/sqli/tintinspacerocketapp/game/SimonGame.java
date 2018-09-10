@@ -87,12 +87,10 @@ public class SimonGame {
             Log.d(TAG, "Génération prochaine séquence");
             if (gamer.sequence.size() == 0) {
                 // début de la partie
-                gamer.sequence.add(LEDColors.getRandomColor());
-                gamer.sequence.add(LEDColors.getRandomColor());
-                gamer.sequence.add(LEDColors.getRandomColor());
+                gamer.sequence.addAll(LEDColors.getRandomColors(3));
             } else {
                 // suite de la partie
-                gamer.sequence.add(LEDColors.getRandomColor());
+                gamer.sequence.add(LEDColors.getRandomColor(gamer.sequence.get(gamer.sequence.size()-1)));
             }
         } else {
             // reprise d'une partie, on rejoue la dernière séquence

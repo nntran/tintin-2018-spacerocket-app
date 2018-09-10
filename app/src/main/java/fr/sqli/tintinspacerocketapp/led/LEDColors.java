@@ -2,6 +2,7 @@ package fr.sqli.tintinspacerocketapp.led;
 
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Random;
 
@@ -24,6 +25,24 @@ public enum LEDColors {
     @Override
     public String toString() {
         return this.code;
+    }
+
+    public static List<LEDColors> getRandomColors(final int size) {
+        final List<LEDColors> ledColors = new LinkedList<>();
+        ledColors.add(getRandomColor());
+        for (int i = 1; i < size; i++) {
+            ledColors.add(getRandomColor(ledColors.get(i-1)));
+        }
+
+        return ledColors;
+    }
+
+    public static LEDColors getRandomColor(final LEDColors excludedColor) {
+        final LEDColors generatedColor = getRandomColor();
+        if (generatedColor.equals(excludedColor)) {
+            return getRandomColor(excludedColor);
+        }
+        return generatedColor;
     }
 
     public static LEDColors getRandomColor() {
