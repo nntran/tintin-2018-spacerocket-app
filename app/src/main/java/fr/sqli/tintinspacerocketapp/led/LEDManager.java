@@ -136,7 +136,7 @@ public final class LEDManager {
             // On éteind toutes les LEDs avant de lancer la séquence
             turnOffAllLEDs();
             Thread.currentThread().sleep(1000);
-            int timingSequence = 400;
+            int timingSequence = 350;
 
             for (int i=0; i < ledColors.length; i++) {
                 Thread.currentThread().sleep(timingSequence);
