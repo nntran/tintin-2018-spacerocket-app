@@ -1,9 +1,18 @@
 package fr.sqli.tintinspacerocketapp.game;
 
+import android.icu.text.SimpleDateFormat;
+import android.os.Environment;
 import android.util.Log;
 
+import com.squareup.moshi.JsonAdapter;
+import com.squareup.moshi.Moshi;
+import com.squareup.moshi.adapters.Rfc3339DateJsonAdapter;
+
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.Collections;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -31,6 +40,16 @@ public class SimonGame {
 
     private final Integer DEMO_GAMER_ID = -1;
 
+    // Nom du dossier de stockage des données du jeu
+    private static final String STORAGE_DIRECTORY_NAME = "simon-game";
+
+    private static SimpleDateFormat dateFormat = new SimpleDateFormat("yyyyMMdd");
+    private static SimpleDateFormat timeFormat = new SimpleDateFormat("hh:MM:ss");
+
+    /**
+     *
+     * @throws IOException
+     */
     public SimonGame() throws IOException {
         this.ledManagerInstance = LEDManager.getInstance();
     }
@@ -124,6 +143,15 @@ public class SimonGame {
                 internalUpdateScore(gamer);
                 ledManagerInstance.startWelcomeSequence();
                 Log.d(TAG, "Partie terminée avec un score de " + gamer.score + " et une durée totale de " + gamer.time);
+
+                // Sauvegarde le socore ainsi que les infos du joueur
+                try {
+                    saveGamer(gamer);
+                }
+                catch (IOException ex) {
+                    Log.e(TAG, "Erreur de sauvegarde du joueur: " + gamer, ex);
+                }
+
                 throw new GameFinishedException();
             } else {
                 attempResult.result = false;
@@ -204,5 +232,80 @@ public class SimonGame {
             Collections.sort(sortedIdList);
             return sortedIdList.get(sortedIdList.size() - 1) + 1;
         }
+    }
+
+    /**
+     * Enregistrer les informations du joueur dans un fichier JSON
+     * @param gamer
+     * @throws IOException
+     */
+    public void saveGamer(Gamer gamer) throws IOException {
+
+        Log.i(TAG, "Sauvegarde du jouoeur: "
+                + gamer.gamerId
+                + "("+ gamer.gamerFirstname + " " + gamer.gamerLastname + ")");
+
+        if (!isExternalStorageWritable())
+            throw new IOException("Impossible d'écrire sur le média externe");
+
+        File storageDir = getExternalStorageDir(STORAGE_DIRECTORY_NAME);
+        if (storageDir == null)
+            throw new IOException("Impossible de récupérer le dossier " + STORAGE_DIRECTORY_NAME);
+
+        // TODO : A améliorer
+        Date aujourdhui = new Date();
+        gamer.startDateTime = dateFormat.format(aujourdhui) + " " + timeFormat.format(aujourdhui);
+
+        // Conversion de l'objet gamer en JSON
+        Moshi moshi = new Moshi.Builder()
+                //.add(Date.class, new DateJsonAdapter())
+                //.add(Date.class, new Rfc3339DateJsonAdapter())
+                .build();
+
+        JsonAdapter<Gamer> jsonAdapter = moshi.adapter(Gamer.class);
+        String json = jsonAdapter.toJson(gamer);
+        Log.d(TAG, "Gamer JSON: " + json);
+
+        // Sauvegarde du flux JSON dans un fichier (format: AAAAMMJJ-<ID JOUEUR>.json)
+        //String fileName = dateFormat.format(gamer.startDateTime) + "-" + gamer.gamerId + ".json";
+        String fileName = dateFormat.format(aujourdhui) + "-" + gamer.gamerId + ".json";
+        File jsonFile = new File(storageDir, fileName);
+        FileOutputStream outputStream  = null;
+        try {
+            outputStream = new FileOutputStream(jsonFile);
+            outputStream.write(json.getBytes());
+        } catch (Exception e) {
+            throw new IOException("Impossible d'écrire sur le média externe");
+        }
+        finally {
+            if (outputStream != null) {
+                outputStream.close();
+            }
+        }
+    }
+
+    /**
+     *  Checks if external storage is available for read and write
+     */
+    public boolean isExternalStorageWritable() {
+        String state = Environment.getExternalStorageState();
+        return Environment.MEDIA_MOUNTED.equals(state);
+    }
+
+    /**
+     *
+     * @param directoryName
+     * @return
+     */
+    public static File getExternalStorageDir(String directoryName) {
+        // Get the directory for the user's.
+        File dir = new File(Environment.getExternalStoragePublicDirectory(
+                Environment.DIRECTORY_DOCUMENTS), directoryName);
+        if (!dir.exists()) {
+            if (!dir.mkdirs()) {
+                Log.e(TAG, "Erreur de création du répertoire " + directoryName);
+            }
+        }
+        return dir;
     }
 }

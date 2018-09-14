@@ -54,5 +54,12 @@
         android:layout_height="wrap_content"
         android:text="Exit app"/>
 
+    <EditText
+        android:id="@+id/infosText"
+        android:layout_width="match_parent"
+        android:layout_height="157dp"
+        android:ems="10"
+        android:inputType="textMultiLine" />
+
 
 </LinearLayout>

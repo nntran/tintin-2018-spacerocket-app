@@ -1,12 +1,17 @@
 package fr.sqli.tintinspacerocketapp;
 
 import android.app.Activity;
+import android.net.Network;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
+import android.widget.TextView;
 
 import java.io.IOException;
+import java.net.InetAddress;
+import java.net.NetworkInterface;
+import java.util.Enumeration;
 
 import fr.sqli.tintinspacerocketapp.led.LEDColors;
 import fr.sqli.tintinspacerocketapp.led.LEDManager;
@@ -24,6 +29,7 @@ public class MainActivity extends Activity {
     private Button greenLEDButton;
     private Button launchSequenceButton;
     private LEDManager ledManagerInstance;
+    private TextView infosText;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -31,6 +37,14 @@ public class MainActivity extends Activity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.main_layout);
         initView();
+
+        // Setting time zone
+        String command = "setprop persist.sys.timezone Europe/Lisbon";
+        try {
+            Runtime.getRuntime().exec(command);
+        } catch (IOException ioe){
+            Log.e(TAG, "Erreur de configuration du TimeZone", ioe);
+        }
 
         try {// Starting HTTP server
             httpdserver = new HttpdServer();
@@ -117,6 +131,62 @@ public class MainActivity extends Activity {
             }
         });
 
+        // Affichage des infos (IP, stats, ...)
+        infosText = findViewById(R.id.infosText);
+        infosText.setTextSize(14);
+        infosText.setText(getInfos());
+    }
+
+    /**
+     * Récup des infos, stats à afficher
+     * @return
+     */
+    private String getInfos() {
+        StringBuffer buffer = new StringBuffer();
+        buffer.append("----------------------------------------------------");
+        try {
+            // getting the list of interfaces in the local machine
+            Enumeration<NetworkInterface> n = NetworkInterface.getNetworkInterfaces();
+            while (n.hasMoreElements()) { //for each interface
+
+                NetworkInterface e = n.nextElement();
+                //name of the interface
+                buffer.append("\nInterface Name: " + e.getName());
+                //A interface may be binded to many IP addresses like IPv4 and IPv6
+                //hence getting the Enumeration of list of IP addresses
+                Enumeration<InetAddress> a = e.getInetAddresses();
+                while (a.hasMoreElements()) {
+                    InetAddress addr = a.nextElement();
+                    String add = addr.getHostAddress().toString();
+                    if (add.length() < 17)
+                        buffer.append("\nIPv4 Address: " + add);
+                    else
+                        buffer.append("\nIPv6 Address: " + add);
+                }
+                if (e.getHardwareAddress() != null) {
+                    // getting the mac address of the particular network interface
+                    byte[] mac = e.getHardwareAddress();
+                    // properly formatting the mac address
+                    StringBuilder macAddress = new StringBuilder();
+                    for (int i = 0; i < mac.length; i++) {
+                        macAddress.append(String.format("%03X%s", mac[i], (i < mac.length - 1) ? "-" : ""));
+                    }
+                    buffer.append("\nHardware adrress: " + macAddress.toString());
+                }
+            }
+        }
+        catch (Exception ex) {
+            Log.e(TAG, "", ex);
+        }
+
+        // Autres infos ici
+
+
+        buffer.append("\n----------------------------------------------------");
+
+        Log.d(TAG, buffer.toString());
+
+        return buffer.toString();
     }
 
     @Override

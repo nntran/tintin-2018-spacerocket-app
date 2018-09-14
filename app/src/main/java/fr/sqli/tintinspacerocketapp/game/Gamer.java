@@ -1,5 +1,6 @@
 package fr.sqli.tintinspacerocketapp.game;
 
+import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -19,6 +20,12 @@ public class Gamer {
     public int score;
     public long time;
     public int remainingAttemps = 3;
+    //public Date startDateTime = new Date();
+    public String startDateTime;
+
+    public Gamer() {
+
+    }
 
     @Override
     public boolean equals(Object obj) {
@@ -42,6 +49,7 @@ public class Gamer {
                 ", sequence=" + sequence +
                 ", score=" + score +
                 ", time=" + time +
+                ", startDateTime=" + startDateTime +
                 '}';
     }
 }
