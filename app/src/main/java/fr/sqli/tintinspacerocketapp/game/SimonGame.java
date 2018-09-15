@@ -275,7 +275,7 @@ public class SimonGame {
             outputStream = new FileOutputStream(jsonFile);
             outputStream.write(json.getBytes());
         } catch (Exception e) {
-            throw new IOException("Impossible d'écrire sur le média externe");
+            throw new IOException("Erreur de sauvegarde du fichier JSON: " + jsonFile.getAbsolutePath());
         }
         finally {
             if (outputStream != null) {
