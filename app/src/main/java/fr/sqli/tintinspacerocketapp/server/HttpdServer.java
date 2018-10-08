@@ -152,7 +152,7 @@ public final class HttpdServer extends NanoHTTPD {
             } catch (Exception e) {
                 response = new BadRequest("Mauvais format de requête (id du joueur non trouvé)");
             }
-        } else if (uri.contains("/scores/day=")) {
+        } else if (uri.contains("/scores/day")) {
            response = internalGetScores(uri);
         }
 
