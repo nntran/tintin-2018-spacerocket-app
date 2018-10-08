@@ -28,6 +28,7 @@ import fr.sqli.tintinspacerocketapp.server.responses.Forbidden;
 import fr.sqli.tintinspacerocketapp.server.responses.Health;
 import fr.sqli.tintinspacerocketapp.server.responses.HttpResponse;
 import fr.sqli.tintinspacerocketapp.server.responses.NotFound;
+import fr.sqli.tintinspacerocketapp.server.responses.OkAllGamers;
 import fr.sqli.tintinspacerocketapp.server.responses.OkAsynch;
 import fr.sqli.tintinspacerocketapp.server.responses.OkPlay;
 import fr.sqli.tintinspacerocketapp.server.responses.OkScore;
@@ -66,7 +67,7 @@ public final class HttpdServer extends NanoHTTPD {
         moshi = new Moshi.Builder().build();
         moshiGamer = new Moshi.Builder().build().adapter(Gamer.class);
         moshiTry = new Moshi.Builder().build().adapter(Try.class);
-        simonGame = new SimonGame();
+        simonGame = SimonGame.getInstance();
     }
 
     /**
@@ -87,7 +88,7 @@ public final class HttpdServer extends NanoHTTPD {
 
         switch (session.getMethod()) {
             case GET:
-                processingResult = processGetRequest(session.getUri(), simonGame);
+                processingResult = processGetRequest(session.getUri());
 
                 if (null != processingResult) {
                     responseContent = processingResult.toJson(moshi);
@@ -104,7 +105,7 @@ public final class HttpdServer extends NanoHTTPD {
                     session.parseBody(map);
                     final String jsonBodyContent = map.get("postData");
                     Log.d(TAG, "Request body : " + jsonBodyContent);
-                    processingResult = processPostRequest(session.getUri(), session.getParameters(), jsonBodyContent, simonGame);
+                    processingResult = processPostRequest(session.getUri(), session.getParameters(), jsonBodyContent);
                 } catch (IOException e) {
                     processingResult = new BadRequest("Corps de la requête incorrect");
                     e.printStackTrace();
@@ -135,7 +136,7 @@ public final class HttpdServer extends NanoHTTPD {
      * @param uri requested API URI
      * @return response content or null
      */
-    protected HttpResponse processGetRequest(final String uri, final SimonGame simonGame) {
+    protected HttpResponse processGetRequest(String uri) {
         HttpResponse response = null;
 
         if (uri.equals("/health")) {
@@ -151,6 +152,8 @@ public final class HttpdServer extends NanoHTTPD {
             } catch (Exception e) {
                 response = new BadRequest("Mauvais format de requête (id du joueur non trouvé)");
             }
+        } else if (uri.contains("/scores/day=")) {
+           response = internalGetScores(uri);
         }
 
         return response;
@@ -163,19 +166,22 @@ public final class HttpdServer extends NanoHTTPD {
      * @param jsonBodyContent
      * @return response content or null
      */
-    protected HttpResponse processPostRequest(final String uri, final Map<String, List<String>> parameters, final String jsonBodyContent, final SimonGame simonGame) throws IOException {
+    protected HttpResponse processPostRequest(
+            final String uri, final Map<String,
+            List<String>> parameters,
+            final String jsonBodyContent) throws IOException {
         HttpResponse response = null;
 
         // TODO refactor constantes
         if (uri.startsWith(URI_SIMON_GAME_PREFIX)) {
             if (uri.contains("/sequence")) {
-                response = internalPostSequence(parameters, simonGame);
+                response = internalPostSequence(parameters);
             } else if (uri.contains("/start")) {
-                response = internalPostSimonStart(jsonBodyContent, simonGame);
+                response = internalPostSimonStart(jsonBodyContent);
             } else if (uri.contains("/play")) {
-                response = internalPostPlay(uri, simonGame);
+                response = internalPostPlay(uri);
             } else if (uri.contains("/try")) {
-                response = internalPostTry(uri, jsonBodyContent, simonGame);
+                response = internalPostTry(uri, jsonBodyContent);
             }
         }
 
@@ -183,7 +189,13 @@ public final class HttpdServer extends NanoHTTPD {
     }
 
     @NonNull
-    private HttpResponse internalPostPlay(final String uri, final SimonGame simonGame) {
+    private HttpResponse internalGetScores(String uri) {
+        List<Gamer> gamersSortedList = simonGame.getSortGamersList();
+        return new OkAllGamers(gamersSortedList);
+    }
+
+    @NonNull
+    private HttpResponse internalPostPlay(final String uri) {
         HttpResponse response;
         try {
             final Gamer gamer = simonGame.playSequence(getGamerIdFromUri(uri));
@@ -199,7 +211,7 @@ public final class HttpdServer extends NanoHTTPD {
     }
 
     @NonNull
-    private HttpResponse internalPostTry(final String uri, final String jsonBodyContent, final SimonGame simonGame) {
+    private HttpResponse internalPostTry(final String uri, final String jsonBodyContent) {
         HttpResponse response;
         try {
             final Attemp attemp = new Attemp();
@@ -225,7 +237,7 @@ public final class HttpdServer extends NanoHTTPD {
     }
 
     @NonNull
-    private HttpResponse internalPostSimonStart(final String jsonBodyContent, final SimonGame simonGame) throws IOException {
+    private HttpResponse internalPostSimonStart(final String jsonBodyContent) throws IOException {
         HttpResponse response;
         try {
             final Gamer gamer = simonGame.startNewGame(moshiGamer.fromJson(jsonBodyContent));
@@ -255,7 +267,7 @@ public final class HttpdServer extends NanoHTTPD {
     }
 
     @NonNull
-    private HttpResponse internalPostSequence(final Map<String, List<String>> parameters, final SimonGame simonGame) {
+    private HttpResponse internalPostSequence(final Map<String, List<String>> parameters) {
         HttpResponse response;
         boolean isSynchrone = false;
 

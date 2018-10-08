@@ -1,18 +1,20 @@
 package fr.sqli.tintinspacerocketapp;
 
 import android.app.Activity;
-import android.net.Network;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
 
+import com.google.android.things.device.TimeManager;
+
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
 import java.util.Enumeration;
 
+import fr.sqli.tintinspacerocketapp.game.SimonGame;
 import fr.sqli.tintinspacerocketapp.led.LEDColors;
 import fr.sqli.tintinspacerocketapp.led.LEDManager;
 import fr.sqli.tintinspacerocketapp.server.HttpdServer;
@@ -39,12 +41,18 @@ public class MainActivity extends Activity {
         initView();
 
         // Setting time zone
-        String command = "setprop persist.sys.timezone Europe/Lisbon";
-        try {
-            Runtime.getRuntime().exec(command);
-        } catch (IOException ioe){
-            Log.e(TAG, "Erreur de configuration du TimeZone", ioe);
-        }
+        //String command = "setprop persist.sys.timezone Europe/Paris";
+        //try {
+        //    Runtime.getRuntime().exec(command);
+        //} catch (IOException ioe){
+        //    Log.e(TAG, "Erreur de configuration du TimeZone", ioe);
+        //}
+        // Set time zone
+        TimeManager timeManager = TimeManager.getInstance();
+        // Use 24-hour time
+        timeManager.setTimeFormat(TimeManager.FORMAT_24);
+        // Set time zone to Europe/Paris Time
+        timeManager.setTimeZone("Europe/Paris");
 
         try {// Starting HTTP server
             httpdserver = new HttpdServer();
@@ -135,6 +143,14 @@ public class MainActivity extends Activity {
         infosText = findViewById(R.id.infosText);
         infosText.setTextSize(14);
         infosText.setText(getInfos());
+
+        // Démarrage du jeu Simon
+        try {
+            SimonGame.getInstance();
+        } catch (IOException ex) {
+            //
+        }
+
     }
 
     /**
