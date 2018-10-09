@@ -37,13 +37,11 @@ public abstract class HtmlResponse {
                         });
 
                 StringBuilder body = new StringBuilder();
-                body.append("<table summary=\"Top 10\" cellpadding=\"0\" cellspacing=\"0\">");
+                body.append("<table summary=\"Ranking\" cellpadding=\"0\" cellspacing=\"0\">");
 	            body.append("<thead><tr><th>Rank</th><th>Player name</th><th>Score</th><th>Time</th></tr></thead>");
                 body.append("<tbody>");
 
-                for (int i = 0; i < gamersList.size()-1; i++) {
-                    if (i == 10) break;
-
+                for (int i = 0; i < gamersList.size(); i++) {
                     Gamer player = gamersList.get(i);
                     body.append("<tr>");
                     body.append("<td>").append(i + 1).append("</td>");
