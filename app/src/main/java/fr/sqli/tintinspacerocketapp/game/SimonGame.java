@@ -67,6 +67,14 @@ public class SimonGame {
      * Retourner la liste des joueurs triés par son score + temps
      * @return
      */
+    public Gamer[] getGamers() {
+        return gamerMap.values().toArray(new Gamer[gamerMap.size()]);
+    }
+
+    /**
+     * Retourner la liste des joueurs triés par son score + temps
+     * @return
+     */
     public List<Gamer> getSortGamersList() {
 
         Gamer gamers[] = gamerMap.values().toArray(new Gamer[gamerMap.size()]);
@@ -76,16 +84,17 @@ public class SimonGame {
                 gamersList, new Comparator<Gamer>() {
             @Override
             public int compare(Gamer g1, Gamer g2) {
-                if (g1.score > g2.score) return 1;
-                if (g1.score < g2.score) return -1;
-                if (g1.time < g2.time) return 1;
-                if (g1.time > g2.time) return -1;
+                if (g1.score > g2.score) return -1;
+                if (g1.score < g2.score) return 1;
+                if (g1.time < g2.time) return -1;
+                if (g1.time > g2.time) return 1;
                 return 0;
             }
         });
 
         return gamersList;
     }
+
 
     /**
      * Lance une séquence aléatoire de 5 couleurs

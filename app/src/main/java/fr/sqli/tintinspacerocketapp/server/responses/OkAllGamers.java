@@ -9,10 +9,10 @@ import fr.sqli.tintinspacerocketapp.game.Gamer;
 
 public class OkAllGamers implements HttpResponse {
 
-    private List<Gamer> scores;
+    private List<Gamer> players;
 
-    public OkAllGamers(List<Gamer> scores) {
-        this.scores = scores;
+    public OkAllGamers(List<Gamer> players) {
+        this.players = players;
     }
 
     @Override

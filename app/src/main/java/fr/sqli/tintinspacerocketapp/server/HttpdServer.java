@@ -7,6 +7,7 @@ import com.squareup.moshi.JsonAdapter;
 import com.squareup.moshi.Moshi;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -26,6 +27,7 @@ import fr.sqli.tintinspacerocketapp.server.requests.Try;
 import fr.sqli.tintinspacerocketapp.server.responses.BadRequest;
 import fr.sqli.tintinspacerocketapp.server.responses.Forbidden;
 import fr.sqli.tintinspacerocketapp.server.responses.Health;
+import fr.sqli.tintinspacerocketapp.server.responses.HtmlResponse;
 import fr.sqli.tintinspacerocketapp.server.responses.HttpResponse;
 import fr.sqli.tintinspacerocketapp.server.responses.NotFound;
 import fr.sqli.tintinspacerocketapp.server.responses.OkAllGamers;
@@ -46,6 +48,15 @@ public final class HttpdServer extends NanoHTTPD {
      * Default HTTP PORT
      */
     private static final int PORT = 8888;
+
+    private final static String ALLOWED_METHODS = "GET, POST, PUT, DELETE, OPTIONS, HEAD";
+
+    private final static int MAX_AGE = 42 * 60 * 60;
+
+    // explicitly relax visibility to package for tests purposes
+    public final static String DEFAULT_ALLOWED_HEADERS = "origin,accept,content-type";
+
+    public final static String ACCESS_CONTROL_ALLOW_HEADER_PROPERTY_NAME = "AccessControlAllowHeader";
 
     /**
      * Business code
@@ -95,6 +106,12 @@ public final class HttpdServer extends NanoHTTPD {
                     responseStatus = processingResult.getStatus();
                     responseMimeType = "application/json";
                 }
+                else
+                if (session.getUri().contains("/ranking")) {
+                    responseContent = HtmlResponse.ranking(simonGame.getGamers()/*HtmlResponse.getGamersTest()*/).asHtml();
+                    responseStatus = NanoHTTPD.Response.Status.OK;
+                    responseMimeType = NanoHTTPD.MIME_HTML;
+                }
 
                 // add others methods
 
@@ -128,7 +145,16 @@ public final class HttpdServer extends NanoHTTPD {
                 break;
         }
 
-        return newFixedLengthResponse(responseStatus, responseMimeType,responseContent);
+        Response response = newFixedLengthResponse(responseStatus, responseMimeType,responseContent);
+
+        // add headers
+        response.addHeader("Access-Control-Allow-Origin", "*");
+        response.addHeader("Access-Control-Allow-Headers", DEFAULT_ALLOWED_HEADERS);
+        response.addHeader("Access-Control-Allow-Credentials", "true");
+        response.addHeader("Access-Control-Allow-Methods", ALLOWED_METHODS);
+        response.addHeader("Access-Control-Max-Age", "" + MAX_AGE);
+
+        return response;
     }
 
     /**
@@ -152,7 +178,7 @@ public final class HttpdServer extends NanoHTTPD {
             } catch (Exception e) {
                 response = new BadRequest("Mauvais format de requête (id du joueur non trouvé)");
             }
-        } else if (uri.contains("/scores/day")) {
+        } else if (uri.contains("/players")) {
            response = internalGetScores(uri);
         }
 
@@ -190,8 +216,8 @@ public final class HttpdServer extends NanoHTTPD {
 
     @NonNull
     private HttpResponse internalGetScores(String uri) {
-        List<Gamer> gamersSortedList = simonGame.getSortGamersList();
-        return new OkAllGamers(gamersSortedList);
+        List<Gamer> gamersList = Arrays.asList(simonGame.getGamers());
+        return new OkAllGamers(gamersList);
     }
 
     @NonNull

@@ -166,28 +166,31 @@ public class MainActivity extends Activity {
             while (n.hasMoreElements()) { //for each interface
 
                 NetworkInterface e = n.nextElement();
-                //name of the interface
-                buffer.append("\nInterface Name: " + e.getName());
-                //A interface may be binded to many IP addresses like IPv4 and IPv6
-                //hence getting the Enumeration of list of IP addresses
-                Enumeration<InetAddress> a = e.getInetAddresses();
-                while (a.hasMoreElements()) {
-                    InetAddress addr = a.nextElement();
-                    String add = addr.getHostAddress().toString();
-                    if (add.length() < 17)
-                        buffer.append("\nIPv4 Address: " + add);
-                    else
-                        buffer.append("\nIPv6 Address: " + add);
-                }
-                if (e.getHardwareAddress() != null) {
-                    // getting the mac address of the particular network interface
-                    byte[] mac = e.getHardwareAddress();
-                    // properly formatting the mac address
-                    StringBuilder macAddress = new StringBuilder();
-                    for (int i = 0; i < mac.length; i++) {
-                        macAddress.append(String.format("%03X%s", mac[i], (i < mac.length - 1) ? "-" : ""));
+                if ("eth0".equals(e.getName())) {
+                    //name of the interface
+                    buffer.append("\nInterface Name: " + e.getName());
+                    //A interface may be binded to many IP addresses like IPv4 and IPv6
+                    //hence getting the Enumeration of list of IP addresses
+
+                    Enumeration<InetAddress> a = e.getInetAddresses();
+                    while (a.hasMoreElements()) {
+                        InetAddress addr = a.nextElement();
+                        String add = addr.getHostAddress().toString();
+                        if (add.length() < 17)
+                            buffer.append("\nIPv4 Address: " + add);
+                        else
+                            buffer.append("\nIPv6 Address: " + add);
                     }
-                    buffer.append("\nHardware adrress: " + macAddress.toString());
+                    if (e.getHardwareAddress() != null) {
+                        // getting the mac address of the particular network interface
+                        byte[] mac = e.getHardwareAddress();
+                        // properly formatting the mac address
+                        StringBuilder macAddress = new StringBuilder();
+                        for (int i = 0; i < mac.length; i++) {
+                            macAddress.append(String.format("%03X%s", mac[i], (i < mac.length - 1) ? "-" : ""));
+                        }
+                        buffer.append("\nHardware adrress: " + macAddress.toString());
+                    }
                 }
             }
         }
