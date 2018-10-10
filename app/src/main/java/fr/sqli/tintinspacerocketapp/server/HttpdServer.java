@@ -154,7 +154,7 @@ public final class HttpdServer extends NanoHTTPD {
 
         Response response = newFixedLengthResponse(responseStatus, responseMimeType,responseContent);
 
-        // add headers
+        // allow CORS
         response.addHeader("Access-Control-Allow-Origin", "*");
         response.addHeader("Access-Control-Allow-Headers", DEFAULT_ALLOWED_HEADERS);
         response.addHeader("Access-Control-Allow-Credentials", "true");
