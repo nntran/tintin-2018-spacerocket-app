@@ -48,7 +48,7 @@ public class StorageHelper {
      * @return
      * @throws IOException
      */
-    public static Map<Integer, Gamer> read(Date date) throws IOException {
+    public static List<Gamer> read(Date date) throws IOException {
         final String today = (date == null ? null : dateFormat.format(date));
         if (today != null)
             Log.i(TAG, "Chargement des fichiers JSON de la journée " + date);
@@ -66,18 +66,23 @@ public class StorageHelper {
             }
         });
 
-        Map<Integer, Gamer> gamers = new HashMap<>();
+        List<Gamer> playersList = new ArrayList<>();
         if (files != null && files.length > 0) {
             // Conversion du flux JSON en gamer
             for (File file : files) {
                 Log.i(TAG, "Chargement du fichier " + file.getName());
-                Gamer gamer = read(file);
-                gamers.put(gamer.gamerId, gamer);
+                try {
+                    Gamer player = read(file);
+                    playersList.add(player);
+                }
+                catch (Exception ex) {
+                    Log.e(TAG, "Erreur de chargement du fichier " + file.getName(), ex);
+                }
             }
-            Log.i(TAG, "Nombre de joueurs chargés: " + gamers.size());
+            Log.i(TAG, "Nombre de joueurs chargés: " + playersList.size());
         }
 
-        return gamers;
+        return playersList;
     }
 
     /**

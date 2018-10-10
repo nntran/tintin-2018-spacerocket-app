@@ -8,6 +8,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -49,7 +50,12 @@ public class SimonGame {
         ledManagerInstance = LEDManager.getInstance();
 
         // Chargement des joueurs de la journée
-        gamerMap = StorageHelper.read(new Date());
+        List<Gamer> players = StorageHelper.read(new Date());
+
+        gamerMap = new HashMap<>(players.size());
+        for (Gamer player: players) {
+            gamerMap.put(player.gamerId, player);
+        }
     }
 
     /**
@@ -75,11 +81,9 @@ public class SimonGame {
      * Retourner la liste des joueurs triés par son score + temps
      * @return
      */
-    public List<Gamer> getSortGamersList() {
+    public static List<Gamer> sortPlayersByScore(Gamer players[]) {
 
-        Gamer gamers[] = gamerMap.values().toArray(new Gamer[gamerMap.size()]);
-        List<Gamer> gamersList = Arrays.asList(gamers);
-
+        List<Gamer> gamersList = Arrays.asList(players);
         Collections.sort(
                 gamersList, new Comparator<Gamer>() {
             @Override
@@ -216,6 +220,36 @@ public class SimonGame {
         return attempResult;
     }
 
+    /**
+     * Stopping the current game
+     * @param gamerId
+     * @throws GameFinishedException
+     * @throws GamerNotFoundException
+     */
+    public Score stop(int gamerId) throws GameFinishedException, GamerNotFoundException {
+
+        Gamer gamer = getGamerAndCheckGame(gamerId);
+
+        // Nombre d'essais max atteint
+        // Mise à jour du score finale
+        internalUpdateScore(gamer);
+        ledManagerInstance.startWelcomeSequence();
+        Log.d(TAG, "Partie terminée avec un score de " + gamer.score + " et une durée totale de " + gamer.time);
+
+        // Sauvegarde le socore ainsi que les infos du joueur
+        try {
+            StorageHelper.write(gamer);
+        }
+        catch (IOException ex) {
+            Log.e(TAG, "Erreur de sauvegarde du joueur: " + gamer, ex);
+        }
+
+        Score score = new Score();
+        score.score = gamer.score;
+        score.time = gamer.time;
+        return score;
+    }
+
     private void internalUpdateScore(Gamer gamer) {
         // Séquence correcte
         // Calcul du score
@@ -280,5 +314,24 @@ public class SimonGame {
             Collections.sort(sortedIdList);
             return sortedIdList.get(sortedIdList.size() - 1) + 1;
         }
+    }
+
+    /**
+     * Generate random gamers for tests
+     * @param number
+     * @return
+     */
+    public static Gamer[] createRandomGamers(int number) {
+        Gamer[] gamers = new Gamer[number];
+
+        for (int i = 0; i < number; i++) {
+            gamers[i] = new Gamer();
+            gamers[i].gamerFirstname = "Gamer " + i;
+            gamers[i].gamerLastname = "Test";
+            gamers[i].time = 5000 + (long)(Math.random() * ((120000 - 5000) + 1));
+            gamers[i].score = 2 + (int)(Math.random() * ((30 - 2) + 1));
+        }
+
+        return gamers;
     }
 }

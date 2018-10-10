@@ -7,7 +7,10 @@ import com.squareup.moshi.JsonAdapter;
 import com.squareup.moshi.Moshi;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -18,6 +21,7 @@ import fr.sqli.tintinspacerocketapp.game.AttempResult;
 import fr.sqli.tintinspacerocketapp.game.Gamer;
 import fr.sqli.tintinspacerocketapp.game.Score;
 import fr.sqli.tintinspacerocketapp.game.SimonGame;
+import fr.sqli.tintinspacerocketapp.game.StorageHelper;
 import fr.sqli.tintinspacerocketapp.game.ex.GameFinishedException;
 import fr.sqli.tintinspacerocketapp.game.ex.GameNotFinishedException;
 import fr.sqli.tintinspacerocketapp.game.ex.GamerAlreadyPlayedException;
@@ -35,6 +39,7 @@ import fr.sqli.tintinspacerocketapp.server.responses.OkAsynch;
 import fr.sqli.tintinspacerocketapp.server.responses.OkPlay;
 import fr.sqli.tintinspacerocketapp.server.responses.OkScore;
 import fr.sqli.tintinspacerocketapp.server.responses.OkStart;
+import fr.sqli.tintinspacerocketapp.server.responses.OkStop;
 import fr.sqli.tintinspacerocketapp.server.responses.OkSynch;
 import fr.sqli.tintinspacerocketapp.server.responses.OkTry;
 
@@ -108,7 +113,9 @@ public final class HttpdServer extends NanoHTTPD {
                 }
                 else
                 if (session.getUri().contains("/ranking")) {
-                    responseContent = HtmlResponse.ranking(simonGame.getGamers()/*HtmlResponse.getGamersTest()*/).asHtml();
+                    responseContent = HtmlResponse.ranking(
+                            simonGame.getGamers()
+                            /*SimonGame.createRandomGamers(20)*/).asHtml();
                     responseStatus = NanoHTTPD.Response.Status.OK;
                     responseMimeType = NanoHTTPD.MIME_HTML;
                 }
@@ -179,7 +186,7 @@ public final class HttpdServer extends NanoHTTPD {
                 response = new BadRequest("Mauvais format de requête (id du joueur non trouvé)");
             }
         } else if (uri.contains("/players")) {
-           response = internalGetScores(uri);
+           response = internalGetPlayers();
         }
 
         return response;
@@ -208,6 +215,8 @@ public final class HttpdServer extends NanoHTTPD {
                 response = internalPostPlay(uri);
             } else if (uri.contains("/try")) {
                 response = internalPostTry(uri, jsonBodyContent);
+            } else if (uri.contains("/stop")) {
+                response = internalStopGame(uri);
             }
         }
 
@@ -215,9 +224,15 @@ public final class HttpdServer extends NanoHTTPD {
     }
 
     @NonNull
-    private HttpResponse internalGetScores(String uri) {
-        List<Gamer> gamersList = Arrays.asList(simonGame.getGamers());
-        return new OkAllGamers(gamersList);
+    private HttpResponse internalGetPlayers() {
+        HttpResponse response;
+        try {
+            List<Gamer> playersList = StorageHelper.read((Date)null);
+            response = new OkAllGamers(playersList);
+        } catch (Exception e) {
+            response = new BadRequest("Mauvais format de requête");
+        }
+        return response;
     }
 
     @NonNull
@@ -270,6 +285,20 @@ public final class HttpdServer extends NanoHTTPD {
             response = new OkStart(gamer.gamerId, gamer.gamerResume);
         } catch (GamerAlreadyPlayedException e) {
             response = new Forbidden("La partie est terminée (nombre de tentatives max atteint)", e.gamerId);
+        }
+        return response;
+    }
+
+    @NonNull
+    private HttpResponse internalStopGame(final String uri) {
+        HttpResponse response;
+        try {
+            Score score = simonGame.stop(getGamerIdFromUri(uri));
+            response = new OkStop(score);
+        } catch (GamerNotFoundException gnfe) {
+            response = new NotFound("Aucun joueur trouvé");
+        } catch (Exception e) {
+            response = new BadRequest("Mauvais format de requête (id du joueur non trouvé ou contenu incorrect)");
         }
         return response;
     }
