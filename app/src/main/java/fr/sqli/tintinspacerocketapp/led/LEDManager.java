@@ -55,10 +55,10 @@ public final class LEDManager {
         yellowLED = new LED("BCM17");
         ledMap.put(LEDColors.YELLOW, yellowLED);
 
-        redLED = new LED("BCM27");
+        redLED = new LED("BCM22");
         ledMap.put(LEDColors.RED, redLED);
 
-        greenLED = new LED("BCM23");
+        greenLED = new LED("BCM27");
         ledMap.put(LEDColors.GREEN, greenLED);
     }
 
