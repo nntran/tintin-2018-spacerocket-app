@@ -49,8 +49,8 @@ public class SimonGame {
 
         ledManagerInstance = LEDManager.getInstance();
 
-        // Chargement des joueurs de la journée
-        List<Gamer> players = StorageHelper.read(new Date());
+        // Chargement des joueurs
+        List<Gamer> players = StorageHelper.read();
 
         gamerMap = new HashMap<>(players.size());
         for (Gamer player: players) {

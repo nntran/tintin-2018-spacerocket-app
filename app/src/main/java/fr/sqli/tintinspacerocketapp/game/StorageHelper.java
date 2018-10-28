@@ -43,6 +43,15 @@ public class StorageHelper {
     }
 
     /**
+     * Read all gamers from storage
+     * @return
+     * @throws IOException
+     */
+    public static List<Gamer> read() throws IOException {
+        return read((Date)null);
+    }
+
+    /**
      * Read gamers from storage for the giving date or <code>null</code> value for all
      * @param date
      * @return
